@@ -1,0 +1,93 @@
+---
+title: "HW3"
+author: "Nila Nathan"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = "~/Desktop/RStudio Files/DW 181")
+```
+
+1. 
+
+For finding the rate for table2:
+
+```{r}
+library(tidyr)
+library(tidyverse)
+library(dplyr)
+library(magrittr)
+newtable2=data.frame(spread(table2,key=type,value=count))
+newtable2%<>%mutate(rate=cases/population *10000)
+newtable2
+
+```
+
+For finding the rate for table4a+table4b: 
+
+```{r}
+
+
+newtable4a=data.frame(gather(table4a,`1999`,`2000`,key="year",value="cases"))
+newtable4b=data.frame(gather(table4b,`1999`,`2000`,key="year",value="population"))
+table4=data.frame(country=newtable4a$country, year=newtable4a$year, cases=newtable4a$cases, population=newtable4b$population)
+table4%<>%mutate(rate=cases/population *10000)
+table4
+```
+2. The reason that the code fails is because there needs to be quotes around 1999 and 2000. Because of this, it's not recognizing it as the column name and instead thinking it's a number.
+
+3.
+
+```{r}
+library(nycflights13)
+library(lubridate)
+flights2 = flights %>% 
+  mutate(
+    dep_time = make_datetime(year, month, day, dep_time%/%100, dep_time%%100),
+    arr_time = make_datetime(year, month, day, arr_time%/%100, arr_time%%100),
+    sched_dep_time = make_datetime(year, month, day, sched_dep_time%/%100, sched_dep_time%%100),
+    sched_arr_time = make_datetime(year, month, day, sched_arr_time%/%100, sched_arr_time%%100)
+  ) 
+flights2
+
+```
+
+First "dep_time", "arr_time", "sched_dep_time", "sched_arr_time" needs to be converted to times because at the moment they are written as number. 
+
+
+a.
+
+```{r}
+flights2 %>%
+  mutate(change.over.year=hour(dep_time)*100+minute(dep_time)) %>%
+  mutate(month=factor(month(dep_time))) %>%
+  ggplot(aes(change.over.year, color = month)) +
+  geom_freqpoly(binwidth=100)
+```
+By looking at the distribution over a day every month for a year, we can see that the flight distributions seems pretty equal throughout the year. However though people seem to travel a little less in February but it doesn't seem that big of a difference to be significant.
+
+b. 
+```{r}
+
+flights2 %>%
+  mutate(actual.delay = (dep_time - sched_dep_time)/60) %>%
+  filter(dep_delay != actual.delay) %>%
+  select(actual.delay, dep_delay)
+
+```
+I made a new column called actual.delay which was the difference of the departure time and the schedule departure time. There are discrepancies when you compare the two columns of "actual.delay" and "dep_delay" which is the column that is given to us. Even though "dep_delay" is in minutes and "actual.delay" is in seconds, for ease of comparing the numbers, I divided "actual.delay by 60 instead of multiplying "dep_delay".
+
+c. 
+
+```{r}
+flights2 %>%
+  mutate(hour = minute(dep_time),earlyflights = dep_delay < 0) %>%
+  group_by(hour) %>%
+  summarise(earlyflights = mean(earlyflights)) %>%
+  ggplot(aes(hour, earlyflights)) +
+  geom_line()
+```
+The hypothesis is confirmed because in the intervals 20-30 and 50-60, the graph has spikes in it.
+
+

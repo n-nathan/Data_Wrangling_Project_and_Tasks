@@ -1,0 +1,201 @@
+---
+title: "HW2"
+author: "Nila Nathan"
+date: "10/19/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+myPaths <- .libPaths() # get the paths
+myPaths <- c(myPaths[2], myPaths[1]) # switch them
+.libPaths(myPaths) # reassign them
+pandoc_exec()
+```
+
+
+```{r}
+#Connecting to SQL database
+
+library('RODBC')
+myconn=RODBC::odbcConnect('QBS181','nnathan','nnathan@qbs181')
+library(sqldf)
+library(dbplyr)
+```
+
+```{r}
+#Problem 1
+
+R_PhoneEncounter=sqlQuery(myconn, "select * from PhoneCall_Encounter")
+R_PhoneEncounter$EnrollmentGroup=0
+
+R_PhoneEncounter$EnrollmentGroup = ifelse(R_PhoneEncounter$EncounterCode==125060000, 'Clinical Alert', 
+                                           ifelse(R_PhoneEncounter$EncounterCode==125060001, 'Health Coaching ', 
+                                                  ifelse(R_PhoneEncounter$EncounterCode==125060002, 'Technical Question' ,
+                                                         ifelse(R_PhoneEncounter$EncounterCode==125060003, 'Administrative',
+                                                                ifelse(R_PhoneEncounter$EncounterCode==125060004, 'Other',
+                                                                       ifelse(R_PhoneEncounter$EncounterCode==125060005, 'Lack of engagement',0))))))
+
+library(dplyr)
+
+sample_n(R_PhoneEncounter, 10)
+
+```
+
+```{r}
+#Problem 2
+
+c(sum(R_PhoneEncounter$EnrollmentGroup=='Clinical Alert'),
+sum(R_PhoneEncounter$EnrollmentGroup=='Health Coaching '),
+sum(R_PhoneEncounter$EnrollmentGroup=='Technical Question'),
+sum(R_PhoneEncounter$EnrollmentGroup=='Administrative'),
+sum(R_PhoneEncounter$EnrollmentGroup=='Other'),
+sum(R_PhoneEncounter$EnrollmentGroup=='Lack of engagement'))
+
+```
+```{r}
+#Problem 3
+
+PhoneEncounter_CallDuration=sqlQuery(myconn, "select A. *,B.* from CallDuration A
+inner join PhoneCall_Encounter B
+on A.tri_CustomerIDEntityReference=B.CustomerId")
+
+sample_n(PhoneEncounter_CallDuration, 10)
+```
+
+```{r}
+#Problem 4
+
+PhoneEncounter_CallDuration$CallType=ifelse(PhoneEncounter_CallDuration$CallType==1, "Inbound",
+                                            ifelse(PhoneEncounter_CallDuration$CallType==2,"Outbound",0))
+
+PhoneEncounter_CallDuration$CallOutcome=ifelse(PhoneEncounter_CallDuration$CallOutcome==1, "No response",
+                                            ifelse(PhoneEncounter_CallDuration$CallOutcome==2,"Left Voicemail",
+                                                   ifelse (PhoneEncounter_CallDuration$CallOutcome==3, "Successful", 0)))
+```
+
+
+```{r}
+#Problem 4 continued (finding count for call type and call outcome here)
+
+c(sum(PhoneEncounter_CallDuration$CallType=='Inbound'),
+  sum(PhoneEncounter_CallDuration$CallType=='Outbound'))
+
+c(sum(PhoneEncounter_CallDuration$CallOutcome=='No response'),
+  sum(PhoneEncounter_CallDuration$CallOutcome=='Left Voicemail'),
+  sum(PhoneEncounter_CallDuration$CallOutcome=='Successful'))
+```
+
+
+```{r}
+PhoneEncounter_CallDuration$EnrollmentGroup=0
+
+PhoneEncounter_CallDuration$EnrollmentGroup = ifelse(PhoneEncounter_CallDuration$EncounterCode==125060000, 'Clinical Alert', 
+                                          ifelse(PhoneEncounter_CallDuration$EncounterCode==125060001, 'Health Coaching ', 
+                                                 ifelse(PhoneEncounter_CallDuration$EncounterCode==125060002, 'Technical Question' ,
+                                                        ifelse(PhoneEncounter_CallDuration$EncounterCode==125060003, 'Administrative',
+                                                               ifelse(PhoneEncounter_CallDuration$EncounterCode==125060004, 'Other',
+                                                                      ifelse(PhoneEncounter_CallDuration$EncounterCode==125060005, 'Lack of engagement',0))))))
+```
+
+
+```{r}
+#Problem 4 continued (finding the call duration for each enrollment group)
+
+ClinicalAlert=PhoneEncounter_CallDuration[which(PhoneEncounter_CallDuration$EnrollmentGroup=='Clinical Alert'),]
+sum(ClinicalAlert$CallDuration)
+
+HealthCoaching=PhoneEncounter_CallDuration[which(PhoneEncounter_CallDuration$EnrollmentGroup=='Health Coaching '),]
+sum(HealthCoaching$CallDuration)
+
+TechQuestion=PhoneEncounter_CallDuration[which(PhoneEncounter_CallDuration$EnrollmentGroup=='Technical Question'),]
+sum(TechQuestion$CallDuration)
+
+Admin=PhoneEncounter_CallDuration[which(PhoneEncounter_CallDuration$EnrollmentGroup=='Administrative'),]
+sum(Admin$CallDuration)
+
+Other=PhoneEncounter_CallDuration[which(PhoneEncounter_CallDuration$EnrollmentGroup=='Other'),]
+sum(Other$CallDuration)
+
+LackofEngage=PhoneEncounter_CallDuration[which(PhoneEncounter_CallDuration$EnrollmentGroup=='Lack of engagement'),]
+sum(LackofEngage$CallDuration)
+
+```
+
+```{r}
+#Problem 5 - merging of tables
+
+DemConditionText=sqlQuery(myconn, "select A. *,B.*, C.* from Conditions A
+inner join Demographics B
+on A.tri_patientid=B.contactid
+inner join Text C
+on B.contactid=C.tri_contactid")
+
+sample_n(DemConditionText, 10)
+```
+
+
+```{r}
+#Problem 5
+
+library(tidyverse)
+library(lubridate)
+Clinician=DemConditionText[which(DemConditionText$SenderName=='Clinician'),]
+Clinician$CountofTexts=1
+library(plyr)
+Clinician$week = format(Clinician$TextSentDate, format="%Y-%U")
+ddply(Clinician, .(week), summarize, CountofTexts=sum(CountofTexts))
+
+Customer=DemConditionText[which(DemConditionText$SenderName=='Customer'),]
+Customer$CountofTexts=1
+library(plyr)
+Customer$week =format(Customer$TextSentDate, format="%Y-%U")
+ddply(Customer, .(week), summarize, CountofTexts=sum(CountofTexts))
+
+System=DemConditionText[which(DemConditionText$SenderName=='System'),]
+System$CountofTexts=1
+library(plyr)
+System$week = format(System$TextSentDate, format="%Y-%U")
+ddply(System, .(week), summarize, CountofTexts=sum(CountofTexts))
+
+```
+
+
+```{r}
+#Problem 6
+
+AM=DemConditionText[which(DemConditionText$tri_name=='Activity Monitoring'),]
+AM$CountofTexts=1
+library(plyr)
+AM$week =format(AM$TextSentDate, format="%Y-%U")
+ddply(AM, .(week), summarize, CountofTexts=sum(CountofTexts))
+
+CHF=DemConditionText[which(DemConditionText$tri_name=='Congestive Heart Failure'),]
+CHF$CountofTexts=1
+library(plyr)
+CHF$week =format(CHF$TextSentDate, format="%Y-%U")
+ddply(CHF, .(week), summarize, CountofTexts=sum(CountofTexts))
+
+COPD=DemConditionText[which(DemConditionText$tri_name=='COPD'),]
+COPD$CountofTexts=1
+library(plyr)
+COPD$week =format(COPD$TextSentDate, format="%Y-%U")
+ddply(COPD, .(week), summarize, CountofTexts=sum(CountofTexts))
+
+Dia=DemConditionText[which(DemConditionText$tri_name=='Diabetes'),]
+Dia$CountofTexts=1
+library(plyr)
+Dia$week =format(Dia$TextSentDate, format="%Y-%U")
+ddply(Dia, .(week), summarize, CountofTexts=sum(CountofTexts))
+
+Hyper=DemConditionText[which(DemConditionText$tri_name=='Hypertension'),]
+Hyper$CountofTexts=1
+library(plyr)
+Hyper$week =format(Hyper$TextSentDate, format="%Y-%U")
+ddply(Hyper, .(week), summarize, CountofTexts=sum(CountofTexts))
+
+
+```
+
+
+

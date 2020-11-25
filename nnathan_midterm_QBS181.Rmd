@@ -1,0 +1,405 @@
+---
+title: "Midterm"
+author: "Nila Nathan"
+date: "10/27/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+#install.packages('foreign')
+#library(foreign)
+#DIQdata <- read.xport("V:/DIQ_I (1).XPT")
+```
+
+```{r}
+#install.packages('SASxport')
+#install.packages('Hmisc')
+library(SASxport)
+DIQdata <-read.xport("V:/DIQ_I (1).XPT")
+View(DIQdata)
+```
+
+
+```{r}
+#fixing column DID040
+
+library(tidyverse)
+library(dplyr)
+library(magrittr)
+DIQdata$DID040[is.na(DIQdata$DID040)] = median(DIQdata$DID040, na.rm = TRUE)
+DIQdata %<>% mutate(DID040 = ifelse(DIQ010 == 2 , "Not Applicable", 
+                                    ifelse(DIQ010 == 3 , "Not Applicable",
+                                           ifelse(DIQ010 == 7 , "Not Applicable",
+                                                  ifelse(DIQ010 == 9 , "Not Applicable", DID040)))))
+
+```
+
+
+```{r}
+#fixing column DIQ160
+
+DIQdata$DIQ160[is.na(DIQdata$DIQ160)] = median(DIQdata$DIQ160, na.rm = TRUE)
+
+DIQdata %<>% mutate(DIQ160 = ifelse(DIQ010 ==3 , 1, DIQ160))
+DIQdata %<>% mutate(DIQ160 = ifelse(DID040 <12 , "Not Applicable", DIQ160))
+DIQdata %<>% mutate(DIQ160 = ifelse(DIQ010==1 , "Not Applicable", DIQ160))
+DIQdata %<>% mutate(DIQ160 = ifelse(DID040 >=12 & DIQ010==3, "Not Applicable", DIQ160))
+
+
+```
+For column DIQ160 I first performed a median imputation. Then, I filled in cells by putting anyone who previously put down 'borderline' down also as 'prediabetes'. Other restrictions simply came from the DIQ-check item portion
+
+```{r}
+#fixing column DIQ170 and DIQ172
+
+#median(DIQdata$DIQ170, na.rm = TRUE) - wanted to make sure the median was 2 before imputation
+#median(DIQdata$DIQ172, na.rm = TRUE) - wanted to make sure the median was 2 before imputation
+
+
+DIQdata$DIQ170[is.na(DIQdata$DIQ170)] = median(DIQdata$DIQ170, na.rm = TRUE)
+DIQdata$DIQ172[is.na(DIQdata$DIQ172)] = median(DIQdata$DIQ172, na.rm = TRUE)
+
+```
+
+Decided to use median imputations to fill in those 
+
+```{r}
+#fixing columns DIQ175
+
+dat = data.frame(A=DIQdata$DIQ175A, B=DIQdata$DIQ175B, C=DIQdata$DIQ175C, D=DIQdata$DIQ175D, E=DIQdata$DIQ175E, f=DIQdata$DIQ175F, G=DIQdata$DIQ175G, H=DIQdata$DIQ175H, I=DIQdata$DIQ175I, J=DIQdata$DIQ175J, K=DIQdata$DIQ175K, L=DIQdata$DIQ175L, M=DIQdata$DIQ175M, N=DIQdata$DIQ175N, O=DIQdata$DIQ175O, P=DIQdata$DIQ175P,Q=DIQdata$DIQ175Q, R=DIQdata$DIQ175R, S=DIQdata$DIQ175S, t=DIQdata$DIQ175T, U=DIQdata$DIQ175U, V=DIQdata$DIQ175V, W=DIQdata$DIQ175W, X=DIQdata$DIQ175X)
+
+DIQdata$DIQ175 <- paste(dat$A, dat$B, dat$C, dat$D, dat$E, dat$f, dat$G, dat$H, dat$I, dat$J, dat$K, dat$L, dat$M, dat$N, dat$O, dat$P, dat$Q, dat$R, dat$S, dat$t, dat$U, dat$V, dat$W, dat$X, sep="_", na.rm=TRUE)
+
+
+
+DIQdata$DIQ175=sapply(DIQdata$DIQ175,function(x)gsub("_NA", "",x))
+DIQdata$DIQ175=sapply(DIQdata$DIQ175,function(x)gsub("_TRUE", "",x))
+DIQdata$DIQ175=sapply(DIQdata$DIQ175,function(x)gsub("NA_","",x))
+DIQdata$DIQ175=sapply(DIQdata$DIQ175,function(x)gsub("_",",",x))
+DIQdata$DIQ175=sapply(DIQdata$DIQ175,function(x)gsub("10","Family History",x))
+DIQdata$DIQ175=sapply(DIQdata$DIQ175,function(x)gsub("11","Overweight",x))
+DIQdata$DIQ175=sapply(DIQdata$DIQ175,function(x)gsub("12","Age",x))
+DIQdata$DIQ175=sapply(DIQdata$DIQ175,function(x)gsub("13","Poor Diet",x))
+DIQdata$DIQ175=sapply(DIQdata$DIQ175,function(x)gsub("14","Race",x))
+DIQdata$DIQ175=sapply(DIQdata$DIQ175,function(x)gsub("15","Had a baby weighed over 9lbs over birth",x))
+DIQdata$DIQ175=sapply(DIQdata$DIQ175,function(x)gsub("16","Lack of physical activity",x))
+DIQdata$DIQ175=sapply(DIQdata$DIQ175,function(x)gsub("17","High blood pressure",x))
+DIQdata$DIQ175=sapply(DIQdata$DIQ175,function(x)gsub("18","High blood sugar",x))
+DIQdata$DIQ175=sapply(DIQdata$DIQ175,function(x)gsub("19","High cholesterol",x))
+DIQdata$DIQ175=sapply(DIQdata$DIQ175,function(x)gsub("20","Hypglocemic",x))
+DIQdata$DIQ175=sapply(DIQdata$DIQ175,function(x)gsub("21","Extreme Hunger",x))
+DIQdata$DIQ175=sapply(DIQdata$DIQ175,function(x)gsub("22","Tingling/Numbness in hands or feet",x))
+DIQdata$DIQ175=sapply(DIQdata$DIQ175,function(x)gsub("23","Blurred vision",x))
+DIQdata$DIQ175=sapply(DIQdata$DIQ175,function(x)gsub("24","Increased fatigue",x))
+DIQdata$DIQ175=sapply(DIQdata$DIQ175,function(x)gsub("25","Anyone could be at risk",x))
+DIQdata$DIQ175=sapply(DIQdata$DIQ175,function(x)gsub("26","Doctor warning",x))
+DIQdata$DIQ175=sapply(DIQdata$DIQ175,function(x)gsub("27","Other, specify",x))
+DIQdata$DIQ175=sapply(DIQdata$DIQ175,function(x)gsub("28","Gestational Diabetes",x))
+DIQdata$DIQ175=sapply(DIQdata$DIQ175,function(x)gsub("29","Frequent Urination",x))
+DIQdata$DIQ175=sapply(DIQdata$DIQ175,function(x)gsub("30","Thirst",x))
+DIQdata$DIQ175=sapply(DIQdata$DIQ175,function(x)gsub("31","Craving for sweet/eating a lot of sugar",x))
+DIQdata$DIQ175=sapply(DIQdata$DIQ175,function(x)gsub("32","Medication",x))
+DIQdata$DIQ175=sapply(DIQdata$DIQ175,function(x)gsub("33","Polycystic Ovarian Syndrome",x))
+DIQdata$DIQ175=sapply(DIQdata$DIQ175,function(x)gsub("NA","Not Applicable",x))
+
+#install.packages("labelled")
+library(labelled)
+
+var_label(DIQdata$DIQ175) <- "Reason for feeling at risk/being told at risk"
+
+DIQdata$DIQ175A=NULL
+DIQdata$DIQ175B=NULL
+DIQdata$DIQ175C=NULL
+DIQdata$DIQ175D=NULL
+DIQdata$DIQ175E=NULL
+DIQdata$DIQ175F=NULL
+DIQdata$DIQ175G=NULL
+DIQdata$DIQ175H=NULL
+DIQdata$DIQ175I=NULL
+DIQdata$DIQ175J=NULL
+DIQdata$DIQ175K=NULL
+DIQdata$DIQ175L=NULL
+DIQdata$DIQ175M=NULL
+DIQdata$DIQ175N=NULL
+DIQdata$DIQ175O=NULL
+DIQdata$DIQ175P=NULL
+DIQdata$DIQ175Q=NULL
+DIQdata$DIQ175R=NULL
+DIQdata$DIQ175S=NULL
+DIQdata$DIQ175T=NULL
+DIQdata$DIQ175U=NULL
+DIQdata$DIQ175V=NULL
+DIQdata$DIQ175W=NULL
+DIQdata$DIQ175X=NULL
+
+
+```
+
+Here I combined all the columns of 175A-175X and put into one column titled 175 and instead of the numbers, made it more clear but substituting what the numbers meant
+
+```{r}
+#fixing column DID060 and DIQ060U
+
+dat6 = data.frame(insulin=DIQdata$DID060, leng=DIQdata$DIQ060U)
+DIQdata$DIQ060 = paste(dat6$insulin, dat6$leng, sep="/", na.rm=TRUE)
+DIQdata$DIQ060=sapply(DIQdata$DIQ060,function(x)gsub("/TRUE", "",x))
+DIQdata$DIQ060=sapply(DIQdata$DIQ060,function(x)gsub("NA/NA", NA,x))
+DIQdata$DIQ060=sapply(DIQdata$DIQ060,function(x)gsub("0/NA", "Not Applicable",x))
+DIQdata$DIQ060=sapply(DIQdata$DIQ060,function(x)gsub("/1", "/day",x))
+DIQdata$DIQ060=sapply(DIQdata$DIQ060,function(x)gsub("/2", "/week",x))
+DIQdata$DIQ060=sapply(DIQdata$DIQ060,function(x)gsub("/3", "/month",x))
+DIQdata$DIQ060=sapply(DIQdata$DIQ060,function(x)gsub("/4", "/year",x))
+
+
+
+DIQdata %<>% mutate(DIQ060 = ifelse(DIQ050 == 2 , "Not Applicable", 
+                                    ifelse(DIQ050 == 7 , "Not Applicable",
+                                           ifelse(DIQ050 == 9 , "Not Applicable", DIQ060))))
+
+DIQdata$DID060=NULL
+DIQdata$DIQ060U=NULL
+
+```
+
+Also combined column of insulin and units. This got rid of a few missing values.
+
+```{r}
+#fixing column DIQ070
+
+DIQdata$DIQ070[is.na(DIQdata$DIQ070)] = median(DIQdata$DIQ070, na.rm = TRUE)
+
+DIQdata %<>% mutate(DIQ070 = ifelse(DIQ010 == 2 , "Not Applicable", 
+                                    ifelse(DIQ010 ==7 , "Not Applicable",
+                                           ifelse(DIQ010 == 9 , "Not Applicable",
+                                              ifelse(DIQ160 == 2 , "Not Applicable", 
+                                                     ifelse(DIQ160 == 7 , "Not Applicable",
+                                                            ifelse(DIQ160 == 9 , "Not Applicable",DIQ070)))))))
+
+```
+
+
+
+
+```{r}
+#fixing column 230
+
+DIQdata %<>% mutate(DIQ230 = ifelse(DIQ010 == 3 , "Not Applicable", 
+                                    ifelse(DIQ160 == 1 , "Not Applicable", DIQ230)))
+
+
+```
+
+```{r}
+#fixing column 240
+
+DIQdata %<>% mutate(DIQ240 = ifelse(DIQ010 == 3 , "Not Applicable", 
+                                    ifelse(DIQ160 == 1 , "Not Applicable", DIQ240)))
+
+```
+
+```{r}
+#fixing column 250
+
+DIQdata %<>% mutate(DID250 = ifelse(DIQ010 == 3 , "Not Applicable", 
+                                    ifelse(DIQ160 == 1 , "Not Applicable", DID250)))
+
+DIQdata %<>% mutate(DID250 = ifelse(DIQ240 == 2 , "Not Applicable", 
+                                    ifelse(DIQ240 == 7 , "Not Applicable", 
+                                           ifelse(DIQ240==9, "Not Applicable",DID250))))
+
+```
+
+```{r}
+#fixing column 260
+
+dat4 = data.frame(G=DIQdata$DID260, U=DIQdata$DIQ260U)
+DIQdata$DIQ260 <- paste(dat4$G, dat4$U, sep="/", na.rm=TRUE)
+DIQdata$DIQ260=sapply(DIQdata$DIQ260,function(x)gsub("/TRUE", "",x))
+DIQdata$DIQ260=sapply(DIQdata$DIQ260,function(x)gsub("NA/NA", NA,x))
+DIQdata$DIQ260=sapply(DIQdata$DIQ260,function(x)gsub("0/NA", "Not Applicable",x))
+DIQdata$DIQ260=sapply(DIQdata$DIQ260,function(x)gsub("/1", "/day",x))
+DIQdata$DIQ260=sapply(DIQdata$DIQ260,function(x)gsub("/2", "/week",x))
+DIQdata$DIQ260=sapply(DIQdata$DIQ260,function(x)gsub("/3", "/month",x))
+DIQdata$DIQ260=sapply(DIQdata$DIQ260,function(x)gsub("/4", "/year",x))
+
+DIQdata %<>% mutate(DIQ260 = ifelse(DIQ010 == 3 , "Not Applicable", 
+                                    ifelse(DIQ160 == 1 , "Not Applicable", DIQ260)))
+
+DIQdata %<>% mutate(DIQ260 = ifelse(DIQ010 == 3 , "Not Applicable", 
+                                    ifelse(DIQ160 == 1 , "Not Applicable", DIQ260)))
+
+DIQdata$DID260=NULL
+DIQdata$DIQ260U=NULL
+
+```
+
+Combined columns like before in order to make it look cleaner (and when it joins together it also gets rid of some missing values.)
+
+
+```{r}
+#fixing column 275
+
+DIQdata %<>% mutate(DIQ275 = ifelse(DIQ010 == 3 , "Not Applicable", 
+                                    ifelse(DIQ160 == 1 , "Not Applicable", DIQ275)))
+```
+
+```{r}
+#fixing column DIQ280
+
+DIQdata %<>% mutate(DIQ280 = ifelse(DIQ010 == 3 , "Not Applicable", 
+                                    ifelse(DIQ160 == 1 , "Not Applicable", DIQ280)))
+
+DIQdata %<>% mutate(DIQ280 = ifelse(DIQ275 == 2 , "Not Applicable", 
+                                    ifelse(DIQ275 == 7 , "Not Applicable", 
+                                           ifelse(DIQ275==9, "Not Applicable",DIQ280))))
+```
+
+
+```{r}
+#fixing column DIQ291
+
+DIQdata %<>% mutate(DIQ291 = ifelse(DIQ010 == 3 , "Not Applicable", 
+                                    ifelse(DIQ160 == 1 , "Not Applicable", DIQ291)))
+
+DIQdata %<>% mutate(DIQ291 = ifelse(DIQ275 == 2 , "Not Applicable", 
+                                    ifelse(DIQ275 == 7 , "Not Applicable", 
+                                           ifelse(DIQ275==9, "Not Applicable",DIQ291))))
+```
+
+
+```{r}
+#fixing columns 300
+
+DIQdata$DIQ300S[is.na(DIQdata$DIQ300S)] = round(mean(DIQdata$DIQ300S[which(DIQdata$DIQ300S!=9999)]))
+DIQdata$DIQ300D[is.na(DIQdata$DIQ300D)] = round(mean(DIQdata$DIQ300D[which(DIQdata$DIQ300D!=9999)]))
+
+dat2 = data.frame(SBP=DIQdata$DIQ300S, DBP=DIQdata$DIQ300D)
+DIQdata$DIQ300 <- paste(dat2$SBP, dat2$DBP, sep="/", na.rm=TRUE)
+DIQdata$DIQ300=sapply(DIQdata$DIQ300,function(x)gsub("/TRUE", "",x))
+DIQdata$DIQ300=sapply(DIQdata$DIQ300,function(x)gsub("NA/NA", NA,x))
+
+DIQdata %<>% mutate(DIQ300 = ifelse(DID040 < 12 , "Not Applicable", DIQ300))
+
+DIQdata$DIQ300S=NULL
+DIQdata$DIQ300D=NULL
+
+
+```
+
+Did an imputation first because I assumed people who were taking diabetes survey probably had their blood pressure checked at some point. Combined columns like before in order to make it look cleaner (and when it joins together it also gets rid of some missing values.)
+
+
+```{r}
+#fixing columns 310
+
+DIQdata$DID310S[is.na(DIQdata$DID310S)] = round(mean(DIQdata$DID310S[which(DIQdata$DID310S<6666)]))
+DIQdata$DID310D[is.na(DIQdata$DID310D)] = round(mean(DIQdata$DID310D[which(DIQdata$DID310D<6666)]))
+
+dat3 = data.frame(SBP2=DIQdata$DID310S, DBP2=DIQdata$DID310D)
+DIQdata$DID310 <- paste(dat3$SBP2, dat3$DBP2, sep="/", na.rm=TRUE)
+DIQdata$DID310=sapply(DIQdata$DID310,function(x)gsub("/TRUE", "",x))
+DIQdata$DID310=sapply(DIQdata$DID310,function(x)gsub("NA/NA", NA,x))
+
+DIQdata %<>% mutate(DID310 = ifelse(DID040 < 12 , "Not Applicable", DID310))
+
+
+DIQdata$DID310S=NULL
+DIQdata$DID310D=NULL
+
+```
+
+Same reasoning as above.
+
+```{r}
+#fixing column 320
+
+DIQdata %<>% mutate(DID320 = ifelse(DID040 < 12 , "Not Applicable", DID320))
+
+
+```
+
+```{r}
+#fixing column 330
+
+DIQdata %<>% mutate(DID330 = ifelse(DID040 < 12 , "Not Applicable", DID330))
+
+DIQdata %<>% mutate(DID330 = ifelse(DID320 == 5555 , "Not Applicable", 
+                                    ifelse(DID320 == 6666 , "Not Applicable", DID330)))
+```
+
+```{r}
+#fixing column 341
+
+DIQdata %<>% mutate(DID341 = ifelse(DID040 < 12 , "Not Applicable", DID341))
+
+```
+
+
+```{r}
+#fixing column 350
+
+dat5 = data.frame(feet=DIQdata$DID350, times=DIQdata$DIQ350U)
+DIQdata$DIQ350 <- paste(dat5$feet, dat5$times, sep="/", na.rm=TRUE)
+DIQdata$DIQ350=sapply(DIQdata$DIQ350,function(x)gsub("/TRUE", "",x))
+DIQdata$DIQ350=sapply(DIQdata$DIQ350,function(x)gsub("NA/NA", NA,x))
+DIQdata$DIQ350=sapply(DIQdata$DIQ350,function(x)gsub("0/NA", "Not Applicable",x))
+DIQdata$DIQ350=sapply(DIQdata$DIQ350,function(x)gsub("/1", "/day",x))
+DIQdata$DIQ350=sapply(DIQdata$DIQ350,function(x)gsub("/2", "/week",x))
+DIQdata$DIQ350=sapply(DIQdata$DIQ350,function(x)gsub("/3", "/month",x))
+DIQdata$DIQ350=sapply(DIQdata$DIQ350,function(x)gsub("/4", "/year",x))
+
+DIQdata %<>% mutate(DIQ350 = ifelse(DID040 < 12 , "Not Applicable", DIQ350))
+
+DIQdata$DID350=NULL
+DIQdata$DIQ350U=NULL
+
+
+```
+
+Once again, combined columns to get rid of missing values and make it cleaner.
+
+
+```{r}
+#fixing column 360
+
+DIQdata %<>% mutate(DIQ360 = ifelse(DID040 < 12 , "Not Applicable", DIQ360))
+
+```
+
+
+```{r}
+#fixing column 080
+
+DIQdata %<>% mutate(DIQ080 = ifelse(DID040 < 12 , "Not Applicable", DIQ080))
+
+```
+
+
+```{r}
+
+write.csv(DIQdata, "V:/DIQdata.csv")
+
+```
+
+Here I saved it to import into SQL where I can rename the columns. 
+
+```{r}
+#Connecting to SQL database
+
+library('RODBC')
+myconn=RODBC::odbcConnect('QBS181','nnathan','nnathan@qbs181')
+library(sqldf)
+library(dbplyr)
+```
+
+```{r}
+#Retrieving data from SQL with renamed columns
+
+R_DIQ=sqlQuery(myconn, "select * from nnathan.DIQdata")
+head(R_DIQ,10)
+```
+
