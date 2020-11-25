@@ -1,0 +1,89 @@
+---
+title: "QBS 181 Final"
+author: "Nila Nathan"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+
+library(readr)
+IC_BP_v2_1_ <- read_csv("V:/IC_BP_v2 (1).csv")
+```
+
+```{r}
+#1.a
+
+colnames(IC_BP_v2_1_)[4]="BPStatus"
+```
+
+```{r}
+#1.b
+IC_BP_v2_1_$BPStatus=ifelse(IC_BP_v2_1_$BPStatus=="Hypo1", "Controlled",
+                           ifelse(IC_BP_v2_1_$BPStatus=="Normal", "Controlled",
+                                  ifelse(IC_BP_v2_1_$BPStatus=="Hypo2", "Uncontrolled",
+                                         ifelse(IC_BP_v2_1_$BPStatus=="HTN1", "Uncontrolled",
+                                          
+                                            ifelse(IC_BP_v2_1_$BPStatus=="HTN2", "Uncontrolled",
+                                                       ifelse(IC_BP_v2_1_$BPStatus=="HTN3", "Uncontrolled",IC_BP_v2_1_$BPStatus))))))
+
+IC_BP_v2_1_$DichOutcomes=ifelse(IC_BP_v2_1_$BPStatus=="Controlled", 1,
+                                ifelse(IC_BP_v2_1_$BPStatus=="Uncontrolled", 0,IC_BP_v2_1_$BPStatus))
+
+```
+
+```{r}
+#1.c.
+
+library('RODBC')
+myconn=RODBC::odbcConnect('QBS181','nnathan','nnathan@qbs181')
+library(sqldf)
+library(dbplyr)
+
+R_Demo=sqlQuery(myconn, "select * from Demographics")
+Demo_BP=sqlQuery(myconn, "select A. *,B.* from Demographics A
+inner join nnathan.IC_BP_v2 B
+on A.contactid=B.ID")
+```
+
+```{r}
+#1.d
+
+library(magrittr)
+library(tidyr)
+library(dplyr)
+Demo_BP%<>%
+  group_by(ID)%<>%
+  mutate(AvgSys=round(mean(SystolicValue)))
+
+Demo_BP%<>%
+  group_by(ID)%<>%
+  mutate(AvgDia=round(mean(Diastolicvalue)))
+
+```
+```{r}
+#1.e.
+
+library(magrittr)
+
+
+Demo_BP$InterventionStatus=ifelse(Demo_BP$AvgDia>=60 & Demo_BP$AvgDia<=80 & Demo_BP$AvgSys>=90 & Demo_BP$AvgSys<=120,"Controlled", 0)
+
+```
+
+```{r}
+#1.f.
+library(magrittr)
+Demo_BP$success=ifelse(Demo_BP$BPStatus=="Uncontrolled" & Demo_BP$InterventionStatus=="Controlled",1, 0)
+Demo_BP%>%
+  group_by(ID)%>%
+  summarise(sum=sum(success))
+
+##there are 19 duplicates
+
+sum(Demo_BP$success)-19
+```
+
